@@ -1,0 +1,193 @@
+# Ollama Chatbot
+
+Full-stack chatbot application with a React frontend and FastAPI backend, powered by Ollama for local LLM inference.
+
+## Tech Stack
+
+### Backend
+- FastAPI
+- MongoDB (conversation and user storage)
+- Redis (conversation context caching)
+- Ollama (local LLM inference)
+- JWT authentication (PyJWT + bcrypt)
+- Pydantic (request/response validation)
+
+### Frontend
+- React 18 + Vite
+- React Router (client-side routing)
+- Formik + Yup (form management and validation)
+- Axios (HTTP client with token interceptor)
+- Context API (authentication state management)
+
+## Project Structure
+
+```
+├── core/
+│   ├── auth.py              # JWT token validation middleware
+│   ├── config.py            # Environment-based configuration
+│   ├── db.py                # MongoDB connection management
+│   └── redis_client.py      # Redis client initialization
+├── model/
+│   └── mongo_model.py       # Document schemas for MongoDB
+├── repository/
+│   └── mongo_repo.py        # Database operations (CRUD)
+├── router/
+│   ├── auth.py              # Auth endpoints (register, login)
+│   ├── chat.py              # Chat endpoints (send, list, delete)
+│   └── health.py            # Health check endpoint
+├── service/
+│   ├── auth_service.py      # Auth business logic
+│   └── chat.py              # Chat business logic + Ollama integration
+├── vallidation/
+│   └── text_vall.py         # Pydantic request/response models
+├── chatbot-frontend/
+│   └── src/
+│       ├── api/
+│       │   └── axiosConfig.js
+│       ├── context/
+│       │   └── AuthContext.jsx
+│       ├── features/
+│       │   ├── auth/
+│       │   │   ├── components/
+│       │   │   │   ├── LoginForm/
+│       │   │   │   │   ├── LoginForm.jsx
+│       │   │   │   │   └── LoginForm.css
+│       │   │   │   └── RegisterForm/
+│       │   │   │       ├── RegisterForm.jsx
+│       │   │   │       └── RegisterForm.css
+│       │   │   ├── hooks/
+│       │   │   │   └── useAuth.js
+│       │   │   └── services/
+│       │   │       └── authService.js
+│       │   └── chat/
+│       │       ├── components/
+│       │       │   ├── ChatInput/
+│       │       │   │   ├── ChatInput.jsx
+│       │       │   │   └── ChatInput.css
+│       │       │   └── ChatWindow/
+│       │       │       ├── ChatWindow.jsx
+│       │       │       └── ChatWindow.css
+│       │       ├── hooks/
+│       │       │   └── useMessages.js
+│       │       └── services/
+│       │           └── chatService.js
+│       ├── pages/
+│       │   ├── ChatPage.jsx
+│       │   ├── ChatPage.css
+│       │   ├── LoginPage.jsx
+│       │   └── RegisterPage.jsx
+│       ├── components/
+│       │   ├── Button/
+│       │   │   ├── Button.jsx
+│       │   │   └── Button.css
+│       │   └── InputField/
+│       │       ├── InputField.jsx
+│       │       └── InputField.css
+│       ├── App.jsx
+│       ├── App.css
+│       ├── main.jsx
+│       └── index.css
+├── main.py
+├── dockerfile
+├── docker-compose.yml
+├── requirements.txt
+|── .env
+|── .gitignore
+|── .dockerignore
+└── README.md
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | /health | Health check | No |
+| POST | /auth/register | Register new user | No |
+| POST | /auth/login | Login, returns JWT token | No |
+| POST | /chat/ | Send message, get AI response | Yes |
+| GET | /chat/conversations | List user conversations | Yes |
+| GET | /chat/{id}/messages | Get conversation messages | Yes |
+| DELETE | /chat/{id} | Delete a conversation | Yes |
+
+## Prerequisites
+
+- Docker and Docker Compose
+- Ollama installed locally (https://ollama.com/download)
+
+## Setup and Run
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd ai-chatbot
+```
+
+### 2. Configure environment
+
+Create a `.env` file in the project root:
+
+```env
+MONGODB_URI=mongodb://mongodb:27017
+REDIS_URL=redis://redis:6379
+SECRET_KEY=your-secret-key-here
+OLLAMA_MODEL=tinyllama
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+```
+
+### 3. Start Ollama
+
+In a separate terminal:
+
+```bash
+ollama serve
+```
+
+Pull the model if running for the first time:
+
+```bash
+ollama pull tinyllama
+```
+
+### 4. Start the application
+
+```bash
+docker-compose up --build
+```
+
+This starts four containers:
+- MongoDB on port 27017
+- Redis on port 6379
+- FastAPI backend on port 8000
+- React frontend on port 5173
+
+### 5. Open the application
+
+Navigate to http://localhost:5173 in your browser.
+
+## Usage
+
+1. Register a new account with email and password (minimum 8 characters)
+2. Login with your credentials
+3. Start a new conversation or open a previous one from the sidebar
+4. Type a message and receive a response from the AI model
+5. Delete conversations from the sidebar
+6. Logout when done
+
+## Architecture
+
+The frontend communicates with the backend through Axios with an automatic token interceptor. Every authenticated request includes the JWT token in the Authorization header. The backend validates the token, identifies the user, and processes the request. Conversations are scoped per user for privacy.
+
+Message flow: User types message in ChatInput, the useMessages hook sends it via chatService to the FastAPI backend. The backend checks Redis cache for conversation context, sends the prompt to Ollama, saves the exchange in MongoDB, caches the updated context in Redis, and returns the AI response.
+
+## Stopping the Application
+
+```bash
+docker-compose down
+```
+
+To also remove stored data:
+
+```bash
+docker-compose down -v
+```
