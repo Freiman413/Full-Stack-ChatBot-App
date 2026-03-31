@@ -16,7 +16,7 @@ An AI-powered chatbot application for real-time conversations. Students interact
 
 **Auth:** JWT via PyJWT, stored in localStorage, passwords hashed with bcrypt
 
-**Frontend:** React 18, Vite, React Router, Formik + Yup, Axios
+**Frontend:** React 18, Vite, React Router, Formik, Yup, Axios
 
 **Containerization:** Docker and Docker Compose
 
